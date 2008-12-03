@@ -12,21 +12,22 @@ LWP::Curl - LWP methods implementation with Curl engine
 
 =head1 VERSION
 
-Version 0.01
+Version 0.02
 
 =cut
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 
 =head1 SYNOPSIS
 
-Implementa a interface do LWP no modulo WWW::Curl::Easy para que as pessoas que estao acostumadas como LWP não sofram com o Curl e usem ele transparentemente
+Use Curl like LWP, $lwpcurl->get($url), $lwpcurl->timeout(15) don't care about Curl API
 
     use LWP::Curl;
 
     my $lwpcurl = LWP::Curl->new();
-	my $content = $lwpcurl->get('http://search.cpan.org','http://www.cpan.org'); # get the page http://search.cpan.org passing with referer http://www.cpan.org
+	my $content = $lwpcurl->get('http://search.cpan.org','http://www.cpan.org'); 
+	#get the page http://search.cpan.org passing with referer http://www.cpan.org
 
 =cut
 
@@ -87,8 +88,10 @@ sub new {
 	my $user_agent = delete $args{user_agent};
 	$user_agent =  'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)'
 		unless defined $user_agent;
-	my $maxredirs = 3 unless defined $args{max_redirs};
-	my $followlocation = 1 unless defined $args{followlocation};
+	my $maxredirs;
+	$maxredirs = 3 unless defined $args{max_redirs};
+	my $followlocation;
+	$followlocation = 1 unless defined $args{followlocation};
 
 	$self->{retcode} = undef;	
 	my $debug = 0;
@@ -110,7 +113,7 @@ sub new {
 
 =head1 METHODS
 
-=head2 $curl->get($url,$referer)
+=head2 $lwpcurl->get($url,$referer)
 
   Get content of $url, passando $referer se definido
 
@@ -140,7 +143,7 @@ sub get {
 	}
 }
 
-##=head2 $curl->post($url,$referer) 
+##=head2 $lwpcurl->post($url,$referer) 
  
 ##  Get content of $url, passando $referer se definido
 
@@ -179,7 +182,7 @@ sub get {
 #	}
 #}
 
-=head2 $curl->timeout($sec)
+=head2 $lwpcurl->timeout($sec)
 
   Set timeout, default 180
 
@@ -193,7 +196,7 @@ sub timeout {
 	$self->{agent}->setopt(CURLOPT_TIMEOUT,$timeout);
 }
 
-=head2 $curl->agent_alias($alias)
+=head2 $lwpcurl->agent_alias($alias)
    
    Copy from L<WWW::Mechanize> begin here
    ____________________________________
@@ -221,7 +224,7 @@ sub timeout {
 
    Copy from L<WWW::Mechanize> ends here, but the idea and the data structure is a copy too :) 
    
-   $curl->agent_alias( 'Windows IE 6' );
+   $lwpcurl->agent_alias( 'Windows IE 6' );
 
 	   sets your User-Agent to
 	    
@@ -254,7 +257,7 @@ sub agent_alias {
 
 =head1 TODO
 
-This is a small list of features I plan to add. Feel free to contribute with your wishlist and comentaries!
+This is a small list of features I'm plan to add. Feel free to contribute with your wishlist and comentaries!
 
 =over 4
 
