@@ -1,5 +1,10 @@
 Revision history for LWP-Curl
 
-0.01    Date/time
+0.01    Wed 03 Dec 2008
         First version, released on an unsuspecting world.
-
+0.02	Wed 03 Dec 2008
+		Some language problems
+		Fix two perlcritic warnings
+0.03	Thu 04 Dec 2008
+		$lwpcurl->post working! :)
+		Auto url encode

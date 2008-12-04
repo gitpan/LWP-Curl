@@ -5,6 +5,7 @@ use strict;
 use WWW::Curl::Easy;
 use Carp qw(croak);
 use Data::Dumper;
+use HTML::Entities;
 
 =head1 NAME
 
@@ -12,16 +13,16 @@ LWP::Curl - LWP methods implementation with Curl engine
 
 =head1 VERSION
 
-Version 0.02
+Version 0.03
 
 =cut
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 
 =head1 SYNOPSIS
 
-Use Curl like LWP, $lwpcurl->get($url), $lwpcurl->timeout(15) don't care about Curl API
+Use libcurl like LWP, $lwpcurl->get($url), $lwpcurl->timeout(15) don't care about Curl API and don't care about html encode
 
     use LWP::Curl;
 
@@ -60,6 +61,10 @@ Set the user agent string. The default is  'Mozilla/4.0 (compatible; MSIE 6.0; W
 
 If the spider receive a HTTP 301 ( Redirect ) they will follow?. The default is 1.
 
+=item * C<< auto_encode => [0|1] >>
+
+Turn on/off auto encode urls, for get/post.
+
 =item * C<< maxredirs => number >>
 
 Set how deep the spider will follow  when receive HTTP 301 ( Redirect ). The default is 3.
@@ -85,13 +90,19 @@ sub new {
 
    	my $headers = delete $args{headers};
 	$headers = 0 unless defined $headers;
+
 	my $user_agent = delete $args{user_agent};
 	$user_agent =  'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)'
 		unless defined $user_agent;
-	my $maxredirs;
-	$maxredirs = 3 unless defined $args{max_redirs};
-	my $followlocation;
-	$followlocation = 1 unless defined $args{followlocation};
+
+	my $maxredirs = delete $args{max_redirs};
+	$maxredirs = 3 unless defined $maxredirs;
+	
+	my $followlocation = delete $args{followlocation};
+	$followlocation = 1 unless defined $followlocation;
+	
+	my $auto_encode = delete $args{auto_encode};
+	$auto_encode = 1 unless defined $auto_encode;
 
 	$self->{retcode} = undef;	
 	my $debug = 0;
@@ -117,17 +128,24 @@ sub new {
 
   Get content of $url, passando $referer se definido
 
+    use LWP::Curl;
+	my $referer = 'http://www.example.com';
+	my $get_url = 'http://www.example.com/foo';
+    my $lwpcurl = LWP::Curl->new();
+	my $content = $lwpcurl->get($get_url, $referer); 
 =cut
 
 sub get {
-    my ($self, $uri, $referer) = @_;
+    my ($self, $url, $referer) = @_;
 	
 	if(!$referer){
 		$referer = "";
 	}
 
+	encode($url) if $self->{auto_encode};
+
 	$self->{agent}->setopt(CURLOPT_REFERER,$referer);
-	$self->{agent}->setopt(CURLOPT_URL,$uri);
+	$self->{agent}->setopt(CURLOPT_URL,$url);
     $self->{agent}->setopt(CURLOPT_HTTPGET, 1); 
 
     my $content =  "";
@@ -139,48 +157,74 @@ sub get {
    	     #print("\nTransfer went ok\n") if $self->{debug};
 		 return $content;
 	} else {
-        croak("An error happened: Host $uri ".$self->{agent}->strerror($self->{retcode})." ($self->{retcode})\n");
+        croak("An error happened: Host $url ".$self->{agent}->strerror($self->{retcode})." ($self->{retcode})\n");
 	}
 }
 
-##=head2 $lwpcurl->post($url,$referer) 
+=head2 $lwpcurl->post($url,$hash_form,$referer) 
  
-##  Get content of $url, passando $referer se definido
+  POST the $hash_form fields in $url, passing $referer if defined
 
-##=cut
+    use LWP::Curl;
 
-##sub post {
-##   my ($self, $uri, $hash_form, $referer) = @_;
+    my $lwpcurl = LWP::Curl->new();
 
-##	if(!$referer){
-##		$referer = "";
-##	}
+	my $referer = 'http://www.examplesite.com/';
+	my $post_url = 'http://www.examplesite.com/post/';
 
-	#unless($hash_form){
+	my $hash_form = { 
+		'field1' => 'value1',
+		'field2' => 'value2',
+	}
 
-#	}
-#	$self->{agent}->setopt(CURLOPT_POSTFIELDS, $formData);
-#	$self->{agent}->setopt(CURLOPT_POST,1);
-#	$self->{agent}->setopt(CURLOPT_HTTPGET,0);
+	my $content = $lwpcurl->post($post_url, $hash_form, $referer); 
 
-#	$self->{agent}->setopt(CURLOPT_REFERER,$referer);
-#	$self->{agent}->setopt(CURLOPT_URL,$uri);
-#    	$self->{agent}->setopt(CURLOPT_POST, 1); 
-#	my $content =  "";
-#	open (my $fileb, ">", \$content);
-#	$self->{agent}->setopt(CURLOPT_WRITEDATA,$fileb);
-#	$self->{retcode} = $self->{agent}->perform;
+=cut
 
-#	if ($self->{retcode} == 0) {
-#   	     print("Transfer went ok\n");
-#		 return $content;
-#   	     #my $response_code = $curl->getinfo(CURLINFO_HTTP_CODE);
-#   	     # judge result and next action based on $response_code
-#   	     #print("Received response: $response_body\n");
-#	} else {
-#        croak("An error happened: Host $uri ".$self->{agent}->strerror($self->{retcode})." ($self->{retcode})\n");
-#	}
-#}
+sub post {
+   my ($self, $url, $hash_form, $referer) = @_;
+	
+	if(!$referer){
+		$referer = "";
+	}
+
+	if(!$hash_form){
+		warn( qq{POST Data not defined} );
+	}else{
+		#print STDERR Dumper $hash_form;
+	}
+
+
+	my $post_string = "";
+    foreach my $var (keys %{$hash_form}){
+		$post_string = $post_string . "$var=$hash_form->{$var}";
+		$post_string = $post_string . "&";
+		#print STDERR "var: $var - $hash_form->{$var}\n";
+	}
+
+	$url = encode($url) if $self->{auto_encode};
+	$post_string = encode($post_string) if $self->{auto_encode};
+	
+	$self->{agent}->setopt(CURLOPT_POSTFIELDS, $post_string);
+	$self->{agent}->setopt(CURLOPT_POST,1);
+	$self->{agent}->setopt(CURLOPT_HTTPGET,0);
+
+	$self->{agent}->setopt(CURLOPT_REFERER,$referer);
+	$self->{agent}->setopt(CURLOPT_URL,$url);
+	my $content =  "";
+	open (my $fileb, ">", \$content);
+	$self->{agent}->setopt(CURLOPT_WRITEDATA,$fileb);
+	$self->{retcode} = $self->{agent}->perform;
+
+	if ($self->{retcode} == 0) {
+   	     #print("Transfer went ok\n");
+		 #print STDERR $content; 
+		 return $content;
+   	     #my $response_code = $selfcurl->getinfo(CURLINFO_HTTP_CODE);
+	} else {
+       croak("An error happened: Host $url ".$self->{agent}->strerror($self->{retcode})." ($self->{retcode})\n");
+	}
+}
 
 =head2 $lwpcurl->timeout($sec)
 
@@ -194,6 +238,21 @@ sub timeout {
 		return $self->{timeout};
 	}
 	$self->{agent}->setopt(CURLOPT_TIMEOUT,$timeout);
+}
+
+=head2 $lwpcurl->auto_encode($value)
+
+  Turn on/off auto_encode
+
+=cut
+
+sub auto_encode {
+	my ($self, $value) = @_;
+	if(!$value) {
+		return $self->{auto_encode};
+	}else{
+		$self->{auto_encode} = $value;
+	}
 }
 
 =head2 $lwpcurl->agent_alias($alias)
@@ -261,7 +320,7 @@ This is a small list of features I'm plan to add. Feel free to contribute with y
 
 =over 4
 
-=item * POST method, this i will release soon.
+=item * Test for the upload method
 
 =item * Improve the Documentation and tests
 
