@@ -13,11 +13,11 @@ LWP::Curl - LWP methods implementation with Curl engine
 
 =head1 VERSION
 
-Version 0.03.1
+Version 0.04
 
 =cut
 
-our $VERSION = '0.03.1';
+our $VERSION = '0.04';
 
 
 =head1 SYNOPSIS
