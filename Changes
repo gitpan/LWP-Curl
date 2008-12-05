@@ -8,3 +8,5 @@ Revision history for LWP-Curl
 0.03	Thu 04 Dec 2008
 		$lwpcurl->post working! :)
 		Auto url encode
+0.03.1  Fri 05 Dec 2008
+		wrong get test
