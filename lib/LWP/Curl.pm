@@ -13,12 +13,11 @@ LWP::Curl - LWP methods implementation with Curl engine
 
 =head1 VERSION
 
-Version 0.04
+Version 0.05
 
 =cut
 
-our $VERSION = '0.04';
-
+our $VERSION = '0.05';
 
 =head1 SYNOPSIS
 
@@ -31,7 +30,6 @@ Use libcurl like LWP, $lwpcurl->get($url), $lwpcurl->timeout(15) don't care abou
 	#get the page http://search.cpan.org passing with referer http://www.cpan.org
 
 =cut
-
 
 =head1 Constructor
 
@@ -76,51 +74,51 @@ Set how deep the spider will follow  when receive HTTP 301 ( Redirect ). The def
 sub new {
 
     # Check for common user mistake
-    croak("Options to LWP::Curl should be key/value pairs, not hash reference") 
-        if ref($_[1]) eq 'HASH'; 
-	
-    my ($class, %args) = @_;
+    croak("Options to LWP::Curl should be key/value pairs, not hash reference")
+      if ref( $_[1] ) eq 'HASH';
 
-	my $self = {};
-	
-	my $log = delete $args{log} ;
+    my ( $class, %args ) = @_;
 
-	my $timeout = delete $args{timeout};
-    $timeout = 3*60 unless defined $timeout;
+    my $self = {};
 
-   	my $headers = delete $args{headers};
-	$headers = 0 unless defined $headers;
+    my $log = delete $args{log};
 
-	my $user_agent = delete $args{user_agent};
-	$user_agent =  'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)'
-		unless defined $user_agent;
+    my $timeout = delete $args{timeout};
+    $timeout = 3 * 60 unless defined $timeout;
 
-	my $maxredirs = delete $args{max_redirs};
-	$maxredirs = 3 unless defined $maxredirs;
-	
-	my $followlocation = delete $args{followlocation};
-	$followlocation = 1 unless defined $followlocation;
-	
-	my $auto_encode = delete $args{auto_encode};
-	$auto_encode = 1 unless defined $auto_encode;
+    my $headers = delete $args{headers};
+    $headers = 0 unless defined $headers;
 
-	$self->{retcode} = undef;	
-	my $debug = 0;
-	$self->{debug} = $debug;    
-	print STDERR "\n Hash Debug: \n" . Dumper($self) . "\n" if $debug;
-	$self->{agent} = WWW::Curl::Easy->new();
-	$self->{agent}->setopt(CURLOPT_TIMEOUT,$timeout);
-	$self->{agent}->setopt(CURLOPT_USERAGENT, $user_agent);
-    $self->{agent}->setopt(CURLOPT_HEADER,$headers);
-	$self->{agent}->setopt(CURLOPT_AUTOREFERER,1); # always true
-	$self->{agent}->setopt(CURLOPT_MAXREDIRS,$maxredirs);
-	$self->{agent}->setopt(CURLOPT_FOLLOWLOCATION,$followlocation);
-	$self->{agent}->setopt(CURLOPT_SSL_VERIFYPEER,0);
-     #CURLOPT_COOKIESESSION,$cookie;
+    my $user_agent = delete $args{user_agent};
+    $user_agent = 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)'
+      unless defined $user_agent;
 
-	return bless $self, $class;
+    my $maxredirs = delete $args{max_redirs};
+    $maxredirs = 3 unless defined $maxredirs;
+
+    my $followlocation = delete $args{followlocation};
+    $followlocation = 1 unless defined $followlocation;
+
+    my $auto_encode = delete $args{auto_encode};
+    $auto_encode = 1 unless defined $auto_encode;
+
+    $self->{retcode} = undef;
+    my $debug = 0;
+    $self->{debug} = $debug;
+    print STDERR "\n Hash Debug: \n" . Dumper($self) . "\n" if $debug;
+    $self->{agent} = WWW::Curl::Easy->new();
+    $self->{agent}->setopt( CURLOPT_TIMEOUT,     $timeout );
+    $self->{agent}->setopt( CURLOPT_USERAGENT,   $user_agent );
+    $self->{agent}->setopt( CURLOPT_HEADER,      $headers );
+    $self->{agent}->setopt( CURLOPT_AUTOREFERER, 1 );             # always true
+    $self->{agent}->setopt( CURLOPT_MAXREDIRS,   $maxredirs );
+    $self->{agent}->setopt( CURLOPT_FOLLOWLOCATION, $followlocation );
+    $self->{agent}->setopt( CURLOPT_SSL_VERIFYPEER, 0 );
+
+    #CURLOPT_COOKIESESSION,$cookie;
+
+    return bless $self, $class;
 }
-
 
 =head1 METHODS
 
@@ -136,29 +134,33 @@ sub new {
 =cut
 
 sub get {
-    my ($self, $url, $referer) = @_;
-	
-	if(!$referer){
-		$referer = "";
-	}
+    my ( $self, $url, $referer ) = @_;
 
-	encode($url) if $self->{auto_encode};
+    if ( !$referer ) {
+        $referer = "";
+    }
 
-	$self->{agent}->setopt(CURLOPT_REFERER,$referer);
-	$self->{agent}->setopt(CURLOPT_URL,$url);
-    $self->{agent}->setopt(CURLOPT_HTTPGET, 1); 
+    encode($url) if $self->{auto_encode};
 
-    my $content =  "";
-	open (my $fileb, ">", \$content);
-	$self->{agent}->setopt(CURLOPT_WRITEDATA,$fileb);
-	$self->{retcode} = $self->{agent}->perform;
+    $self->{agent}->setopt( CURLOPT_REFERER, $referer );
+    $self->{agent}->setopt( CURLOPT_URL,     $url );
+    $self->{agent}->setopt( CURLOPT_HTTPGET, 1 );
 
-	if ($self->{retcode} == 0) {
-   	     #print("\nTransfer went ok\n") if $self->{debug};
-		 return $content;
-	} else {
-        croak("An error happened: Host $url ".$self->{agent}->strerror($self->{retcode})." ($self->{retcode})\n");
-	}
+    my $content = "";
+    open( my $fileb, ">", \$content );
+    $self->{agent}->setopt( CURLOPT_WRITEDATA, $fileb );
+    $self->{retcode} = $self->{agent}->perform;
+
+    if ( $self->{retcode} == 0 ) {
+
+        #print("\nTransfer went ok\n") if $self->{debug};
+        return $content;
+    }
+    else {
+        croak(  "An error happened: Host $url "
+              . $self->{agent}->strerror( $self->{retcode} )
+              . " ($self->{retcode})\n" );
+    }
 }
 
 =head2 $lwpcurl->post($url,$hash_form,$referer) 
@@ -182,48 +184,55 @@ sub get {
 =cut
 
 sub post {
-   my ($self, $url, $hash_form, $referer) = @_;
-	
-	if(!$referer){
-		$referer = "";
-	}
+    my ( $self, $url, $hash_form, $referer ) = @_;
 
-	if(!$hash_form){
-		warn( qq{POST Data not defined} );
-	}else{
-		#print STDERR Dumper $hash_form;
-	}
+    if ( !$referer ) {
+        $referer = "";
+    }
 
+    if ( !$hash_form ) {
+        warn(qq{POST Data not defined});
+    }
+    else {
 
-	my $post_string = "";
-    foreach my $var (keys %{$hash_form}){
-		$post_string = $post_string . "$var=$hash_form->{$var}";
-		$post_string = $post_string . "&";
-		#print STDERR "var: $var - $hash_form->{$var}\n";
-	}
+        #print STDERR Dumper $hash_form;
+    }
 
-	$url = encode($url) if $self->{auto_encode};
-	$post_string = encode($post_string) if $self->{auto_encode};
-	
-	$self->{agent}->setopt(CURLOPT_POSTFIELDS, $post_string);
-	$self->{agent}->setopt(CURLOPT_POST,1);
-	$self->{agent}->setopt(CURLOPT_HTTPGET,0);
+    my $post_string = "";
+    foreach my $var ( keys %{$hash_form} ) {
+        $post_string = $post_string . "$var=$hash_form->{$var}";
+        $post_string = $post_string . "&";
 
-	$self->{agent}->setopt(CURLOPT_REFERER,$referer);
-	$self->{agent}->setopt(CURLOPT_URL,$url);
-	my $content =  "";
-	open (my $fileb, ">", \$content);
-	$self->{agent}->setopt(CURLOPT_WRITEDATA,$fileb);
-	$self->{retcode} = $self->{agent}->perform;
+        #print STDERR "var: $var - $hash_form->{$var}\n";
+    }
 
-	if ($self->{retcode} == 0) {
-   	     #print("Transfer went ok\n");
-		 #print STDERR $content; 
-		 return $content;
-   	     #my $response_code = $selfcurl->getinfo(CURLINFO_HTTP_CODE);
-	} else {
-       croak("An error happened: Host $url ".$self->{agent}->strerror($self->{retcode})." ($self->{retcode})\n");
-	}
+    $url         = encode($url)         if $self->{auto_encode};
+    $post_string = encode($post_string) if $self->{auto_encode};
+
+    $self->{agent}->setopt( CURLOPT_POSTFIELDS, $post_string );
+    $self->{agent}->setopt( CURLOPT_POST,       1 );
+    $self->{agent}->setopt( CURLOPT_HTTPGET,    0 );
+
+    $self->{agent}->setopt( CURLOPT_REFERER, $referer );
+    $self->{agent}->setopt( CURLOPT_URL,     $url );
+    my $content = "";
+    open( my $fileb, ">", \$content );
+    $self->{agent}->setopt( CURLOPT_WRITEDATA, $fileb );
+    $self->{retcode} = $self->{agent}->perform;
+
+    if ( $self->{retcode} == 0 ) {
+
+        #print("Transfer went ok\n");
+        #print STDERR $content;
+        return $content;
+
+        #my $response_code = $selfcurl->getinfo(CURLINFO_HTTP_CODE);
+    }
+    else {
+        croak(  "An error happened: Host $url "
+              . $self->{agent}->strerror( $self->{retcode} )
+              . " ($self->{retcode})\n" );
+    }
 }
 
 =head2 $lwpcurl->timeout($sec)
@@ -233,11 +242,11 @@ sub post {
 =cut
 
 sub timeout {
-	my ($self, $timeout) = @_;
-	if(!$timeout) {
-		return $self->{timeout};
-	}
-	$self->{agent}->setopt(CURLOPT_TIMEOUT,$timeout);
+    my ( $self, $timeout ) = @_;
+    if ( !$timeout ) {
+        return $self->{timeout};
+    }
+    $self->{agent}->setopt( CURLOPT_TIMEOUT, $timeout );
 }
 
 =head2 $lwpcurl->auto_encode($value)
@@ -247,12 +256,13 @@ sub timeout {
 =cut
 
 sub auto_encode {
-	my ($self, $value) = @_;
-	if(!$value) {
-		return $self->{auto_encode};
-	}else{
-		$self->{auto_encode} = $value;
-	}
+    my ( $self, $value ) = @_;
+    if ( !$value ) {
+        return $self->{auto_encode};
+    }
+    else {
+        $self->{auto_encode} = $value;
+    }
 }
 
 =head2 $lwpcurl->agent_alias($alias)
@@ -292,26 +302,29 @@ sub auto_encode {
 =cut
 
 sub agent_alias {
-	my ($self,$alias) = @_;
+    my ( $self, $alias ) = @_;
 
-	# CTRL+C from WWW::Mechanize, thanks for petdance
-	# ------------	
-	my %known_agents = (
-			'Windows IE 6'      => 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)',
-			'Windows Mozilla'   => 'Mozilla/5.0 (Windows; U; Windows NT 5.0; en-US; rv:1.4b) Gecko/20030516 Mozilla Firebird/0.6',
-			'Mac Safari'        => 'Mozilla/5.0 (Macintosh; U; PPC Mac OS X; en-us) AppleWebKit/85 (KHTML, like Gecko) Safari/85',
-			'Mac Mozilla'       => 'Mozilla/5.0 (Macintosh; U; PPC Mac OS X Mach-O; en-US; rv:1.4a) Gecko/20030401',
-			'Linux Mozilla'     => 'Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.4) Gecko/20030624',
-			'Linux Konqueror'   => 'Mozilla/5.0 (compatible; Konqueror/3; Linux)',
-	);
+    # CTRL+C from WWW::Mechanize, thanks for petdance
+    # ------------
+    my %known_agents = (
+        'Windows IE 6' => 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)',
+        'Windows Mozilla' =>
+'Mozilla/5.0 (Windows; U; Windows NT 5.0; en-US; rv:1.4b) Gecko/20030516 Mozilla Firebird/0.6',
+        'Mac Safari' =>
+'Mozilla/5.0 (Macintosh; U; PPC Mac OS X; en-us) AppleWebKit/85 (KHTML, like Gecko) Safari/85',
+        'Mac Mozilla' =>
+'Mozilla/5.0 (Macintosh; U; PPC Mac OS X Mach-O; en-US; rv:1.4a) Gecko/20030401',
+        'Linux Mozilla' =>
+          'Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.4) Gecko/20030624',
+        'Linux Konqueror' => 'Mozilla/5.0 (compatible; Konqueror/3; Linux)',
+    );
 
-
-	if ( defined $known_agents{$alias} ) {
-		$self->{agent}->setopt(CURLOPT_USERAGENT, $known_agents{$alias});
-		}
-		else {
-			 warn( qq{Unknown agent alias "$alias"} );
-		}
+    if ( defined $known_agents{$alias} ) {
+        $self->{agent}->setopt( CURLOPT_USERAGENT, $known_agents{$alias} );
+    }
+    else {
+        warn(qq{Unknown agent alias "$alias"});
+    }
 }
 
 =head1 TODO
@@ -388,4 +401,4 @@ under the same terms as Perl itself.
 
 =cut
 
-1; # End of LWP::Curl
+1;    # End of LWP::Curl

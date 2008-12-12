@@ -21,3 +21,4 @@ t/boilerplate.t
 t/get.t
 t/pod-coverage.t
 t/pod.t
+upload.t
