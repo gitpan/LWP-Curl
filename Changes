@@ -13,3 +13,4 @@ Revision history for LWP-Curl
 0.05	Fri 12 Dec 2008
 		Removed get test
 		Dependency WWW::Curl::Easy added, thanks to Daniel Mantovani
+0.06	Resolved a litle bug when get method does not return anything
