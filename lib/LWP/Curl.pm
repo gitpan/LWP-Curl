@@ -17,7 +17,7 @@ Version 0.07
 
 =cut
 
-our $VERSION = '0.08';
+our $VERSION = '0.09';
 
 =head1 SYNOPSIS
 
@@ -362,7 +362,7 @@ $lwpcurl->proxy without argument, return the current proxy
 
 sub proxy {
     my ( $self, $proxy ) = @_;
-    if ( !$proxy ) {
+    if ( !defined $proxy ) {
         return $self->{proxy};
     }
 	$self->{proxy} = $proxy;
